@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>樊登讲书 | 时间游戏</title>
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600&display=swap');
+
+:root {
+  --primary: #F59E0B;
+  --primary-dark: #D97706;
+  --primary-darker: #B45309;
+  --bg-deep: #0A0A0A;
+  --bg-card: #141414;
+  --bg-surface: #1A1A1A;
+  --bg-elevated: #262626;
+  --text-primary: #FAFAF9;
+  --text-secondary: #D6D3D1;
+  --text-muted: #A8A29E;
+  --border-subtle: rgba(245,158,11,0.12);
+  --border-active: rgba(245,158,11,0.4);
+  --glow: rgba(245,158,11,0.15);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans SC', system-ui, sans-serif;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Background atmosphere */
+body::before {
+  content: '';
+  position: fixed;
+  top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background: radial-gradient(ellipse at 30% 20%, rgba(245,158,11,0.04) 0%, transparent 50%),
+              radial-gradient(ellipse at 70% 80%, rgba(217,119,6,0.03) 0%, transparent 50%);
+  animation: bgDrift 30s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes bgDrift {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  100% { transform: translate(-3%, -3%) rotate(2deg); }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bg-elevated); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--primary-darker); }
+
+/* Chapter nav */
+.chapter-nav {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 4px 0;
+  scrollbar-width: none;
+}
+.chapter-nav::-webkit-scrollbar { display: none; }
+
+.chapter-btn {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  border-radius: 20px;
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+.chapter-btn:hover {
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  border-color: var(--border-subtle);
+}
+.chapter-btn.active {
+  background: rgba(245,158,11,0.12);
+  color: var(--primary);
+  border-color: var(--border-active);
+  box-shadow: 0 0 20px var(--glow);
+}
+
+/* Player controls */
+.play-btn {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  border: none;
+  color: var(--bg-deep);
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 24px rgba(245,158,11,0.3);
+}
+.play-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 32px rgba(245,158,11,0.45);
+}
+.play-btn:active { transform: scale(0.96); }
+
+.ctrl-btn {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+.ctrl-btn:hover {
+  background: rgba(245,158,11,0.1);
+  color: var(--primary);
+  border-color: var(--border-active);
+}
+
+/* Progress bar */
+.progress-track {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-elevated);
+  border-radius: 3px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-dark), var(--primary));
+  border-radius: 3px;
+  transition: width 0.3s ease;
+  box-shadow: 0 0 8px rgba(245,158,11,0.3);
+}
+
+/* Speed buttons */
+.speed-btn {
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.speed-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); }
+.speed-btn.active {
+  background: rgba(245,158,11,0.12);
+  border-color: var(--border-active);
+  color: var(--primary);
+}
+
+/* Text cards */
+.speech-card {
+  padding: 20px 24px;
+  border-radius: 12px;
+  border-left: 3px solid transparent;
+  background: var(--bg-card);
+  transition: all 0.5s ease;
+  opacity: 0.5;
+}
+.speech-card.active {
+  opacity: 1;
+  border-left-color: var(--primary);
+  background: rgba(245,158,11,0.04);
+  box-shadow: 0 2px 20px rgba(245,158,11,0.06);
+}
+.speech-card.played { opacity: 0.7; }
+.speech-card p {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 16px;
+  line-height: 1.9;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+.speech-card.active p { color: var(--text-primary); }
+
+/* Quote highlight */
+.quote-line {
+  display: block;
+  font-weight: 600;
+  color: var(--primary) !important;
+  font-size: 17px !important;
+}
+
+/* Pulse animation for active card */
+@keyframes subtlePulse {
+  0%, 100% { box-shadow: 0 2px 20px rgba(245,158,11,0.06); }
+  50% { box-shadow: 0 2px 30px rgba(245,158,11,0.12); }
+}
+.speech-card.active.is-speaking { animation: subtlePulse 2s ease-in-out infinite; }
+
+/* Voice selector */
+.voice-select {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+}
+.voice-select:focus { border-color: var(--border-active); }
+
+/* Status indicator */
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: background 0.3s ease;
+}
+.status-dot.speaking { background: #22C55E; animation: dotPulse 1.5s infinite; }
+.status-dot.paused { background: var(--primary); }
+
+@keyframes dotPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .play-btn { width: 56px; height: 56px; font-size: 20px; }
+  .speech-card { padding: 16px 18px; }
+  .speech-card p { font-size: 15px; line-height: 1.8; }
+  .chapter-btn { padding: 6px 12px; font-size: 12px; }
+}
+
+/* Smooth scroll behavior */
+.scroll-container {
+  scroll-behavior: smooth;
+  scroll-padding-top: 20px;
+}
+
+/* Initial loading */
+.loading-overlay {
+  position: fixed; inset: 0;
+  background: var(--bg-deep);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  transition: opacity 0.5s ease;
+}
+.loading-overlay.hidden { opacity: 0; pointer-events: none; }
+
+.loader {
+  width: 48px; height: 48px;
+  border: 3px solid var(--bg-elevated);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Unsupported browser warning */
+.warning-banner {
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.3);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+}
+</style>
+</head>
+<body>
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loader"></div>
+  <p style="margin-top:16px; color:var(--text-muted); font-size:14px;">正在初始化播客引擎...</p>
+</div>
+
+<div style="position:relative; z-index:1; max-width:860px; margin:0 auto; padding:20px 20px 80px;">
+
+  <!-- Header -->
+  <header style="text-align:center; padding:40px 0 32px;">
+    <div style="display:inline-flex; align-items:center; gap:10px; margin-bottom:16px;">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    </div>
+    <h1 style="font-family:'Noto Serif SC',serif; font-size:28px; font-weight:600; letter-spacing:0.04em;">樊登讲书</h1>
+    <h2 style="font-family:'Noto Serif SC',serif; font-size:22px; font-weight:600; color:var(--primary); margin-top:8px;">时间游戏</h2>
+    <p style="color:var(--text-muted); font-size:14px; margin-top:12px; letter-spacing:0.06em;">时间是身边风险和远方机会的组合</p>
+    <div style="display:flex; align-items:center; justify-content:center; gap:16px; margin-top:16px; color:var(--text-muted); font-size:13px;">
+      <span>📖 周洛华 著</span>
+      <span style="opacity:0.3;">|</span>
+      <span>🎙️ 樊登风格播讲</span>
+      <span style="opacity:0.3;">|</span>
+      <span id="totalDuration">⏱ 约35分钟</span>
+    </div>
+  </header>
+
+  <!-- Unsupported warning -->
+  <div class="warning-banner" id="warningBanner" style="display:none; margin-bottom:20px;">
+    <p style="color:#EF4444; font-size:14px;">⚠️ 您的浏览器不支持语音合成功能，请使用 Chrome、Safari 或 Edge 浏览器。</p>
+  </div>
+
+  <!-- Player Controls -->
+  <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:16px; padding:24px; margin-bottom:24px;">
+    <!-- Status & Progress -->
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px;">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText" style="font-size:12px; color:var(--text-muted);">准备就绪</span>
+      <span style="flex:1;"></span>
+      <span id="currentSegmentInfo" style="font-size:12px; color:var(--text-muted);">0 / 0</span>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-track" id="progressTrack" onclick="seekToProgress(event)">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+    </div>
+    <div style="display:flex; justify-content:space-between; margin-top:6px;">
+      <span id="elapsedTime" style="font-size:11px; color:var(--text-muted); font-variant-numeric:tabular-nums;">00:00</span>
+      <span id="estimatedTotal" style="font-size:11px; color:var(--text-muted); font-variant-numeric:tabular-nums;">--:--</span>
+    </div>
+
+    <!-- Controls -->
+    <div style="display:flex; align-items:center; justify-content:center; gap:20px; margin-top:20px;">
+      <button class="ctrl-btn" onclick="prevSegment()" title="上一段">⏮</button>
+      <button class="play-btn" id="playBtn" onclick="togglePlay()">▶</button>
+      <button class="ctrl-btn" onclick="nextSegment()" title="下一段">⏭</button>
+      <button class="ctrl-btn" onclick="stopPlay()" title="停止">⏹</button>
+    </div>
+
+    <!-- Speed & Voice -->
+    <div style="display:flex; align-items:center; justify-content:center; gap:12px; margin-top:16px; flex-wrap:wrap;">
+      <span style="font-size:11px; color:var(--text-muted); margin-right:4px;">语速</span>
+      <button class="speed-btn" data-speed="0.8" onclick="setSpeed(0.8)">0.8x</button>
+      <button class="speed-btn" data-speed="0.9" onclick="setSpeed(0.9)">0.9x</button>
+      <button class="speed-btn active" data-speed="1.0" onclick="setSpeed(1.0)">1.0x</button>
+      <button class="speed-btn" data-speed="1.1" onclick="setSpeed(1.1)">1.1x</button>
+      <button class="speed-btn" data-speed="1.2" onclick="setSpeed(1.2)">1.2x</button>
+      <span style="opacity:0.3; margin:0 4px;">|</span>
+      <select class="voice-select" id="voiceSelect" onchange="changeVoice()">
+        <option value="">加载语音中...</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Chapter Navigation -->
+  <div class="chapter-nav" id="chapterNav" style="margin-bottom:24px;"></div>
+
+  <!-- Script Text Area -->
+  <div class="scroll-container" id="textContainer" style="display:flex; flex-direction:column; gap:12px; max-height:60vh; overflow-y:auto; padding-right:4px;">
+  </div>
+
+  <!-- Footer -->
+  <footer style="text-align:center; padding:40px 0 20px; border-top:1px solid var(--border-subtle); margin-top:40px;">
+    <p style="color:var(--text-muted); font-size:12px; line-height:1.8;">
+      本播客基于樊登讲书风格制作，由 AI 语音合成播报<br>
+      《时间游戏》 周洛华 著 · 上海财经大学出版社
+    </p>
+  </footer>
+</div>
+
+<script>
+// ========== PODCAST DATA ==========
+const PODCAST_DATA = [
+  {
+    chapter: 1,
+    title: "开场",
+    paragraphs: [
+      "各位好，欢迎收听今天的一期节目。",
+      "今天我要给大家讲的这本书，说实话，读完以后我坐了很久。不是因为它不好懂，恰恰是因为它太有冲击力了。它不是那种读完拍大腿说有道理的书，它是那种读完拍大腿说我怎么没想到的书。",
+      "这本书叫作《时间游戏》。副标题特别精彩——时间是身边风险和远方机会的组合。",
+      "作者叫周洛华，上海财经大学的金融学副教授，达特茅斯学院塔克商学院的金融学博士后。这个人很有意思——他自己在序言里就说了一句话，让我印象特别深。他说什么呢？他说，我这本书不能帮助你提高投资回报率。",
+      "你看，一个金融学教授，写了一本关于时间的书，第一个声明就是这本书不能帮你赚钱。他甚至主动披露自己炒股亏了很多钱，卖房炒股，融资炒股，炒股套牢，套牢割肉，割肉创业——他说他每一条弯路都走过一遍。",
+      "说实话，我特别喜欢这种坦诚的作者。一个人如果在序言里就告诉你这本书不能帮你赚钱，那他接下来要说的话，反而更值得你认真听。为什么呢？因为他不需要讨好你。",
+      "好，我们进入正题。"
+    ]
+  },
+  {
+    chapter: 2,
+    title: "这本书到底在说什么？",
+    paragraphs: [
+      "周洛华在这本书里提出了一个全新的时间观。",
+      "你想想，我们平时怎么理解时间？墙上挂的钟，手机上的表，滴答滴答，一秒一秒地过。物理学家说时间是宇宙的基本维度，对吧？爱因斯坦说时间跟空间是一回事，叫时空。金融学家说时间是对资产定价的一个参数，时间越长，折现率越高，资产现在的价值就越低。",
+      "但是周洛华说——全错了。",
+      "他认为，理解时间不应该用物理学和数学的眼光，而应该用人类学和进化论的眼光。他给出的核心定义是：",
+      "【时间是身边风险和远方机会的组合。】",
+      "这个定义，太妙了。",
+      "你想想看——如果你明天就要还房贷，下个月孩子要交学费，信用卡账单月底到期。这个时候，你感受到的时间是什么？是焦虑、紧张、恐惧。你的时间主要是由身边的风险构成的。每一天、每一分钟，你都在想怎么活下去、怎么把钱凑齐。",
+      "反过来，如果你手头宽裕，没有紧迫的账单，刚刚升职加薪，对未来的职业发展充满期待。这个时候，你感受到的时间是什么？是希望、期待、跃跃欲试。你的时间主要是由远方的机会构成的。",
+      "你看，同一天二十四小时，对于穷人和富人来说，是完全不同的时间。",
+      "这就是这本书最核心的洞察。时间不是客观的物理量，时间是一个人对自己处境的主观感受。而一个人对自己处境的感受，取决于他身边有多少迫在眉睫的风险，和远方还有多少值得期待的机会。",
+      "你想想，这个视角是不是特别颠覆？"
+    ]
+  },
+  {
+    chapter: 3,
+    title: "命运女神与灭霸",
+    paragraphs: [
+      "好，我们继续往下讲。",
+      "周洛华用了一个特别生动的类比来解释时间。他说时间在两个极端之间摆动。注意，他用的是摆动这个词，不是波动。这两个词的区别很重要。波动是被动的，你只能接受；摆动是你有所作为的，你可以主动改变。",
+      "一端是什么呢？是希腊神话中的命运女神克洛索。她手里拿着纺锤，不断给你时间，给你机会，不求回报。金融学里有个概念叫Martingale世界，说的就是这种永不清盘的赌场：你输了，有人无息借钱给你继续赌；总有一把你能翻本。在命运女神的世界里，时间是无尽的馈赠。",
+      "另一端呢？是《复仇者联盟》里的灭霸。打一个响指，随机消灭一半人口。在他面前，时间是生存概率，是纯粹的随机筛选。你今天还活着，不是因为你有能力、你努力，纯粹是因为运气好。",
+      "周洛华说，真实的世界介于这两者之间。我们既没有命运女神那么幸运——不会总有人无息借钱给我们；也没有灭霸那么残酷——我们的命运不是完全随机的。",
+      "这引出了全书最核心的概念——集体游戏。",
+      "他说，人类社会就是通过形形色色的集体游戏来管理时间的：既获得更多的机会，又降低生存的风险。什么是集体游戏？婚姻是集体游戏，企业是集体游戏，国家是集体游戏，甚至货币本身也是一种集体游戏。人类发明了各种各样的游戏规则，目的只有一个：让自己离命运女神近一点，离灭霸远一点。",
+      "这个框架，你先记着。后面讲人上人和天外天的时候，你会发现它是理解全书的关键。"
+    ]
+  },
+  {
+    chapter: 4,
+    title: "穷人为什么穷？",
+    paragraphs: [
+      "好，接下来我讲一个让我特别震撼的章节，叫时间的构成。",
+      "为什么穷人穷？这个问题可能很多人想过。有人说是他们懒，有人说是他们不努力，有人说是他们运气不好。但是周洛华给了你一个完全不同的答案。",
+      "他讲了几个经典实验。",
+      "第一个实验——印度蔗农实验。这个实验太经典了。研究人员跟踪了印度的甘蔗农民。蔗农每年只在收获季拿到一次钱，所以他们在一年当中会经历极端的富和穷两个阶段。",
+      "研究者发现什么呢？同一批蔗农，在收获前六周做的智商测试成绩，比收获后六周低了整整百分之二十五。",
+      "百分之二十五。不是他们变笨了。还是同一批人。只是因为他们的时间被恐惧和焦虑占满了，没有剩余的认知资源去做长远规划。",
+      "你想想看，你明天就要还房贷，孩子下个月学费还没着落，信用卡月底到期。这个时候有人跑来跟你说你要有长远眼光、你要投资自己、你要做五年规划——你做得了吗？你做不了。不是因为你不想，是因为你的大脑已经被近期的恐惧塞满了，根本腾不出空间来思考远期的事情。",
+      "第二个实验——泰勒的抛硬币实验。这个也很有意思。第一个班的学生，每人先拿到三十美元，然后让他们选择要不要拿这三十美元赌一把。百分之七十的人选择继续赌。第二个班的学生呢？没有拿到这三十美元，直接让他们选择赌不赌。只有百分之四十二的人选择赌。",
+      "概率完全相同。唯一区别就是兜里有没有三十美元。",
+      "周洛华由此得出一个结论，这个结论我觉得整本书最重要的就这一句话：",
+      "【穷人和富人的根本区别，不在于个人努力或基因优劣，而在于他们身处不同配方的时间段里。】",
+      "穷人的时间构成是百分之九十五的风险加上百分之五的机遇。你让一个每天被账单追着跑的人做什么长远规划？他的杏仁核一直在警报状态——注意，杏仁核就是你大脑里一个黄豆状的东西，负责处理恐惧和威胁。当杏仁核持续激活的时候，你的前额叶皮质——负责理性思考和长期规划的区域——根本无法正常工作。",
+      "所以他说，扶贫的关键不是给穷人钱，而是消除他们的近期风险，给他们注入远期希望。改变他们对时间的预期，他们自然就会开始努力。",
+      "你看，这个观点跟我在《陪孩子终身成长》里反复强调的无条件的爱给孩子安全感其实是一个道理——安全感是一切成长的基础。周洛华是从金融学和社会学的角度，重新证明了这一点。",
+      "其实你想想教育孩子也是一样。你天天追着孩子骂你怎么不努力、你怎么这么笨，孩子的杏仁核也被你的吼叫激活了，他的前额叶皮质也关机了，然后你让他去好好学习——他怎么可能学得进去？",
+      "所以你看，不管是扶贫还是教育，底层逻辑是一样的：先给安全感，再谈成长。"
+    ]
+  },
+  {
+    chapter: 5,
+    title: "人上人与天外天",
+    paragraphs: [
+      "好，接下来是全书最核心、也最有洞察力的部分。",
+      "周洛华认为，人类社会存在两种根本不同的集体游戏。他给它们起了两个名字——人上人模式和天外天模式。",
+      "先说人上人模式。",
+      "人上人的核心逻辑是——人和人的关系是等级制的、固定的。你通过攀附关系网络来提升自己的安全。在这个游戏里，面子和孝子就是最重要的保单。什么意思呢？就是说，你跟周围人的关系越紧密，你欠的人情越多，别人也欠你人情越多，你的安全感就越强。",
+      "在这个模式下，失败是不能容忍的。为什么？因为如果你失败了，不只是你一个人的事，你的失败会拖累整个关系网。你借了张三的钱，张三又欠李四的钱，你倒了，张三也倒了，李四也倒了。所以人上人模式对失败的态度是零容忍。",
+      "那对企业家的态度呢？天然压制。为什么？因为你创业成功了，就打破了原有的互助保险机制——你自己跑到人上去了，脱离了原来的关系网，这对原来那些还在网里的人是一种威胁。你失败了更惨，你害了所有人。",
+      "典型的 人上人 社会有什么特征？传统的人情社会、计划经济体制，还有日本——日本对被俘者零容忍，如果你战败被俘回来了，社会不会接纳你，因为在人上人的保险机制里，你是一个违约的风险。",
+      "再说天外天模式。",
+      "天外天的核心逻辑是——人和人的关系是平等的、流动的。你通过个人能力来提升自己的地位。在这个游戏里，法治和产权保护就是最重要的基础设施。",
+      "对失败的态度呢？容忍甚至尊敬失败者。他举了一个特别有意思的例子——英国国王查理一世。你想想，一个国王，战败被俘六年，按理说这是奇耻大辱对不对？但是回国以后，他反而成了狮心查理这样的英雄。为什么？因为天外天模式里，人们尊敬的不是你有没有赢，而是你有没有敢去战斗。",
+      "对企业家的态度呢？鼓励。创业成功打破了既得利益格局，让风险从外围均匀分配到个体。什么意思呢？就是你创业成功了，你的成果不是被一个关系网内部瓜分，而是通过市场机制扩散到整个社会。你创造了就业，创造了税收，推动了创新。你的成功不是对别人的威胁，而是对所有人的增益。",
+      "他用了一个特别生动的比喻——椋鸟群。",
+      "你知道椋鸟群吗？就是天空中那种成千上万只鸟组成的壮观鸟群。它们一起飞、一起转弯、一起加速，动作整齐划一，好像有一个总指挥一样。但其实没有。每只鸟只需要做一件事——跟自己身边的七只鸟保持一致的飞行方向。",
+      "在天外天模式里，鸟群边缘的椋鸟通过自己的努力挤到更安全的核心位置，这个机制必须得到鼓励，否则风险永远由外围的鸟承担。鸟群不断变换队形，看起来越随机，整体越安全。",
+      "你看，这里有一个特别深刻的道理——科技进步是天外天游戏的驱动器，节衣缩食是人上人游戏的压舱石。",
+      "人们不能同时玩两个游戏。",
+      "你想想，一个社会如果既想有科技创新，又想维持人情关系，既想鼓励企业家冒险，又要求失败了别来找我——这是矛盾的。你不能一边让鸟飞出去探路，一边说飞出去了就别回来了。如果飞出去的鸟发现外面全是风险、没有回报，谁还愿意飞？",
+      "所以周洛华说，一个社会的制度设计，核心就是回答一个问题：你让人家相信未来值得期待吗？"
+    ]
+  },
+  {
+    chapter: 6,
+    title: "时间的秘密形态",
+    paragraphs: [
+      "好，接下来这一章特别有意思。周洛华说，时间的表现形式是多样的——不只是钟表上的刻度。",
+      "在渔码头上，时间是什么？时间是一个冰块。",
+      "你别笑，这个真的很有道理。你知道吗，渔码头上最重要的东西就是冰块。冰块让海鲜保鲜，把鱼的生命从几个小时延长到了几天、甚至几周——延长到超市货架上。渔民辛辛苦苦打上来的鱼，如果没有冰块，几个小时就臭了。有了冰块，鱼可以运到几百公里外的城市，甚至出口到海外。",
+      "所以你看，在渔码头上，冰块就是时间的化身。它延长了事物的经济生命。",
+      "在芯片工厂里，时间是什么？时间是检测仪。",
+      "芯片制造过程中，最关键的一步叫早期失效性检测。什么意思呢？就是芯片生产出来以后，不是马上出厂，而是先放在高温、高压、高湿度的环境下运行一段时间。那些有缺陷的芯片会提前暴露出来，被筛掉。只有通过了检测的芯片才会进入市场。",
+      "这个检测过程，本质上是提升了芯片的可靠性，延长了芯片的经济生命。如果一块芯片装到你的手机里三个月就坏了，你会觉得这个手机垃圾。但如果用了五年都没问题呢？你会觉得这个手机真好用。",
+      "所以你看，在芯片工厂里，检测仪就是时间的化身。",
+      "在人类部落里，时间是什么？时间是父亲、阿姨和外婆。",
+      "这个我觉得是最打动人的一个比喻。在原始部落里，婴儿的死亡率极高。是谁在降低这个死亡率？是父亲的保护，是阿姨们帮忙照顾孩子，是外婆——外婆尤其重要。人类学家发现，在有外婆参与的部落里，婴儿的存活率显著高于没有外婆参与的部落。",
+      "父亲、阿姨和外婆，他们做的事情本质上是什么？是在延长婴儿的生命，延长整个群体的生命。所以他们就是时间。",
+      "周洛华说了一句话，我觉得可以算是这本书的题眼：",
+      "【不要试图理解时间，而要全面理解游戏。一旦你理解了游戏，你对时间的理解就自然嵌入了。】",
+      "这句话你品品。不要直接去想时间是什么，那是一个太抽象、太大的问题。你去看人类在玩什么游戏，你就自然理解了时间在这个游戏里的角色。",
+      "其实我觉得，这个道理放到个人身上也一样适用。你不要问自己时间都去哪儿了，你去看你每天在玩什么游戏——你是在玩一个让你离灭霸更近的游戏，还是在玩一个让你离命运女神更近的游戏？"
+    ]
+  },
+  {
+    chapter: 7,
+    title: "涂鸦与废墟",
+    paragraphs: [
+      "好，这一章我要讲一个特别精彩的洞察。",
+      "周洛华在序言里讲了他1998年第一次去美国的经历。他说他印象最深的不是摩天大楼，不是高科技，而是街头各种各样的涂鸦、奇奇怪怪的职业、稀奇古怪的餐厅。",
+      "他当时不理解——为什么美国有这么多种不同的餐馆？意大利餐馆、墨西哥餐馆、日本餐馆、泰国餐馆、印度餐馆……光是爱尔兰酒吧就有几十种不同口味。",
+      "后来他想明白了。",
+      "他意识到，这些看似多元化和包容的表象，其实是上一次经济繁荣后的废墟。",
+      "什么意思呢？就是说，每一次科技进步——比如互联网泡沫、比如金融危机——都会淘汰掉大量的人。这些被淘汰的人怎么办？他们不会坐在家里等死，他们会去开餐馆、开酒吧、做各种各样奇奇怪怪的事情。形形色色的餐饮业，其实是失业大军的收容所。",
+      "为了差异化竞争，一个失业的爱尔兰裔工人，开的酒吧不能跟别的爱尔兰酒吧一模一样对不对？所以他得打出自己的特色——正宗都柏林风味、凯尔特音乐之夜、家族秘方黑啤。最后你看到的，就是几十种不同口味的爱尔兰酒吧。",
+      "他的一个爱尔兰同学跟他说了一句话，特别扎心。那个同学说：我在都柏林都没见过这么多不同口味的爱尔兰餐厅。",
+      "你想想，一个在爱尔兰土生土长的人，在美国看到了比爱尔兰还爱尔兰的东西。这说明什么？说明这些多元化不是自然形成的，而是被淘汰的人为了生存而制造出来的差异化产品。",
+      "所以周洛华说了一句特别深刻的话——一切文明都是废墟。",
+      "这是维特根斯坦的名言。而周洛华用它来理解美国社会的多元化：你所看到的一切繁华和包容，背后都是上一轮淘汰后的人为了活下来而创造的废墟。",
+      "这个洞察让我想了很久。它告诉我们什么呢？它告诉我们，多元化不是设计出来的，它是人们为了生存而不得不做出的选择。创新也好，创业也好，很多时候不是我有一个改变世界的梦想，而是因为我没有别的路了。",
+      "这恰恰也印证了书里的核心观点——当你的身边风险足够大的时候，你就会被迫去寻找远方的机会。不是主动选择，而是被动驱使。但正是这种被迫的寻找，推动了整个人类社会的进步。"
+    ]
+  },
+  {
+    chapter: 8,
+    title: "和解",
+    paragraphs: [
+      "好，最后一部分了。",
+      "这本书的后记里有一句话，我觉得可以作为整本书的总结。周洛华说：【理解的过程就是自己和这个世界和解的过程。】",
+      "你品品这句话。",
+      "周洛华在序言里讲了他的一个故事。他在大学当老师的时候，有一次被应聘者当场拆穿了。那个应聘者说了一个最新的金融学论文，他不知道。在所有人面前，他被社死了。",
+      "一个金融学教授、一个博士后、一个体制内的成功人士，被一个年轻人当场揭穿你不知道最新的研究。这个场面，换作是你，你会怎么反应？",
+      "恼羞成怒？打压报复？假装没听到？找借口？",
+      "周洛华的选择是——四十一岁那年，他辞职离开了体制。",
+      "然后他用人类学和社会学的方法重新解释了困扰金融学界多年的波动率的微笑现象。他说这是在第二战场的反攻宣言。",
+      "一个人被年轻人当场揭穿无知，他没有恼羞成怒，没有打压报复，而是主动让位、另辟战场。这个经历本身就印证了书里的核心观点——时间不是被动的波动，而是你有选择权利的摆动。",
+      "你没有被波动击倒。你选择了摆动。"
+    ]
+  },
+  {
+    chapter: 9,
+    title: "总结",
+    paragraphs: [
+      "好，我们来做最后的总结。",
+      "这本书适合谁读呢？",
+      "说实话，这本书不太好读。作者是个学术人，语言有时候比较烧脑，有些地方需要你停下来想一想。但如果你能耐着性子读完，你会发现它给了你一个全新的视角来看待很多问题。",
+      "比如——为什么穷人很难翻身？不是因为他们懒，是因为他们的时间被风险占满了。",
+      "为什么有些社会鼓励创新而有些社会压制创新？取决于他们玩哪种游戏。",
+      "为什么面子和关系在有些地方比法律更管用？因为那是人上人游戏的保险机制。",
+      "为什么美国的多元化其实是一种经济适应机制？因为被科技进步淘汰的人需要新的饭碗。",
+      "你读完这本书，如果只能记住一句话，那就记住这句：",
+      "【人一旦相信时间是身边风险和远方机会的组合，他们就会觉得未来值得他们去努力奋斗。】",
+      "构建有效市场和法治社会的目的，不是为了让大家快速致富，而是为了消除唾手可得的身边机会——就是不劳而获；和无法避免的远方风险——就是劳而无功。前者让人走捷径，后者让人躺平。两者都会扼杀奋斗的动机。",
+      "这让我想起我在《可复制的领导力》里反复强调的：管理的核心是激发善意和潜能。周洛华从金融哲学的角度，把这个道理推到了更深的层面——不只是管理，整个社会的制度设计，核心都是这个问题：你怎么让人相信未来值得期待？",
+      "你怎么让人相信，他的努力不会白费？",
+      "你怎么让人相信，失败不会是终点？",
+      "你怎么让人相信，远方还有机会？",
+      "答案不是给他一个确定的承诺，因为没有人能给出确定的承诺。答案是——让他身处一个天外天的游戏里，让他知道这个游戏允许失败，允许重来，允许一个被淘汰的人站起来去做别的、去开一家不同口味的爱尔兰酒吧。",
+      "好，这就是今天讲的《时间游戏》。",
+      "这本书属于那种读完以后看世界的方式会改变的书。不一定能帮你赚钱，但一定能帮你理解自己正在玩什么游戏。",
+      "这个比赚钱重要得多。",
+      "感谢收听，我们下期再见。"
+    ]
+  }
+];
+
+// ========== SPEECH ENGINE ==========
+const synth = window.speechSynthesis;
+let voices = [];
+let selectedVoice = null;
+let currentSegmentIndex = 0;
+let currentParaIndex = 0;
+let isPlaying = false;
+let isPaused = false;
+let playbackSpeed = 1.0;
+let elapsedSeconds = 0;
+let timerInterval = null;
+let segmentStartTimes = [];
+
+// Flatten all segments+paragraphs into a linear index
+function getAllSpeechItems() {
+  const items = [];
+  PODCAST_DATA.forEach((seg, si) => {
+    seg.paragraphs.forEach((p, pi) => {
+      items.push({ segIndex: si, paraIndex: pi, text: p, chapter: seg.chapter, title: seg.title });
+    });
+  });
+  return items;
+}
+
+const allItems = getAllSpeechItems();
+const totalItems = allItems.length;
+
+// Calculate estimated total time (chars / 220 chars per min for TTS at 1x)
+const totalChars = allItems.reduce((sum, item) => sum + item.text.length, 0);
+const estimatedMinutes = Math.round(totalChars / 220);
+
+// Init voices
+function initVoices() {
+  voices = synth.getVoices();
+  if (voices.length === 0) return;
+  
+  const select = document.getElementById('voiceSelect');
+  select.innerHTML = '';
+  
+  // Prefer zh-CN male voices
+  const zhVoices = voices.filter(v => v.lang.startsWith('zh'));
+  const zhMale = zhVoices.filter(v => /male/i.test(v.name) || /yunjian|yunxi|yunyang|yunxia|wanlung|yunjhe/i.test(v.name));
+  const zhFemale = zhVoices.filter(v => !/male/i.test(v.name) && !/yunjian|yunxi|yunyang|yunxia|wanlung|yunjhe/i.test(v.name));
+  
+  const sorted = [...zhMale, ...zhFemale, ...zhVoices.filter(v => !zhVoices.includes(v))];
+  
+  sorted.forEach((v, i) => {
+    const opt = document.createElement('option');
+    opt.value = v.name;
+    opt.textContent = `${v.name.replace('Microsoft ','').replace(' Online (Natural)','')} (${v.lang})`;
+    select.appendChild(opt);
+  });
+  
+  // Auto-select first zh-CN male
+  if (zhMale.length > 0) {
+    selectedVoice = zhMale[0];
+    select.value = zhMale[0].name;
+  } else if (zhVoices.length > 0) {
+    selectedVoice = zhVoices[0];
+    select.value = zhVoices[0].name;
+  }
+}
+
+if (synth.onvoiceschanged !== undefined) {
+  synth.onvoiceschanged = initVoices;
+}
+initVoices();
+
+// Build chapter nav
+function buildChapterNav() {
+  const nav = document.getElementById('chapterNav');
+  PODCAST_DATA.forEach((seg, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'chapter-btn';
+    btn.textContent = seg.title;
+    btn.dataset.segIndex = i;
+    btn.onclick = () => jumpToChapter(i);
+    nav.appendChild(btn);
+  });
+}
+
+// Build text cards
+function buildTextCards() {
+  const container = document.getElementById('textContainer');
+  container.innerHTML = '';
+  
+  PODCAST_DATA.forEach((seg, si) => {
+    // Chapter header
+    const header = document.createElement('div');
+    header.style.cssText = 'padding:8px 4px; margin-top:8px;';
+    header.innerHTML = `<span style="font-size:12px; color:var(--primary); font-weight:600; letter-spacing:0.04em;">第${seg.chapter}章</span> <span style="font-size:14px; color:var(--text-muted); margin-left:8px;">${seg.title}</span>`;
+    container.appendChild(header);
+    
+    seg.paragraphs.forEach((p, pi) => {
+      const card = document.createElement('div');
+      card.className = 'speech-card';
+      card.id = `card-${si}-${pi}`;
+      card.dataset.segIndex = si;
+      card.dataset.paraIndex = pi;
+      
+      const isQuote = p.startsWith('【') && p.endsWith('】');
+      const cleanText = isQuote ? p.slice(1, -1) : p;
+      
+      const para = document.createElement('p');
+      para.textContent = cleanText;
+      if (isQuote) para.classList.add('quote-line');
+      card.appendChild(para);
+      
+      card.onclick = () => jumpToSegment(si, pi);
+      container.appendChild(card);
+    });
+  });
+}
+
+// Highlight active card
+function setActiveCard(segIdx, paraIdx) {
+  document.querySelectorAll('.speech-card').forEach(c => {
+    c.classList.remove('active', 'is-speaking');
+    const si = parseInt(c.dataset.segIndex);
+    const pi = parseInt(c.dataset.paraIndex);
+    if (si < segIdx || (si === segIdx && pi < paraIdx)) {
+      c.classList.add('played');
+    } else {
+      c.classList.remove('played');
+    }
+  });
+  
+  const card = document.getElementById(`card-${segIdx}-${paraIdx}`);
+  if (card) {
+    card.classList.add('active');
+    if (isPlaying && !isPaused) card.classList.add('is-speaking');
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  
+  // Update chapter nav
+  document.querySelectorAll('.chapter-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', parseInt(btn.dataset.segIndex) === segIdx);
+  });
+}
+
+// Speak one paragraph
+function speakParagraph(text, onEnd) {
+  if (!synth) return;
+  
+  synth.cancel();
+  
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'zh-CN';
+  utter.rate = playbackSpeed;
+  utter.pitch = 0.9; // Slightly lower for gravitas
+  utter.volume = 1;
+  
+  if (selectedVoice) {
+    utter.voice = selectedVoice;
+  }
+  
+  utter.onend = () => {
+    if (onEnd) onEnd();
+  };
+  
+  utter.onerror = (e) => {
+    console.error('Speech error:', e);
+    if (onEnd) onEnd();
+  };
+  
+  synth.speak(utter);
+}
+
+// Timer
+function startTimer() {
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    if (isPlaying && !isPaused) {
+      elapsedSeconds++;
+      updateTimerDisplay();
+    }
+  }, 1000);
+}
+
+function stopTimer() {
+  if (timerInterval) clearInterval(timerInterval);
+}
+
+function updateTimerDisplay() {
+  const mins = Math.floor(elapsedSeconds / 60);
+  const secs = elapsedSeconds % 60;
+  document.getElementById('elapsedTime').textContent = 
+    `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+}
+
+function updateProgress() {
+  const progress = ((currentSegmentIndex * 100 + currentParaIndex * 100 / (PODCAST_DATA[currentSegmentIndex]?.paragraphs.length || 1)) / totalItems) * 100;
+  document.getElementById('progressFill').style.width = `${Math.min(progress, 100)}%`;
+  document.getElementById('currentSegmentInfo').textContent = 
+    `${currentSegmentIndex * 1 + 1} / ${PODCAST_DATA.length}`;
+}
+
+// Play sequence
+function playSequence() {
+  if (currentSegmentIndex >= PODCAST_DATA.length) {
+    stopPlay();
+    return;
+  }
+  
+  const seg = PODCAST_DATA[currentSegmentIndex];
+  if (currentParaIndex >= seg.paragraphs.length) {
+    currentSegmentIndex++;
+    currentParaIndex = 0;
+    if (currentSegmentIndex >= PODCAST_DATA.length) {
+      stopPlay();
+      return;
+    }
+    // Brief pause between chapters
+    setTimeout(() => playSequence(), 800);
+    return;
+  }
+  
+  const text = seg.paragraphs[currentParaIndex];
+  const isQuote = text.startsWith('【') && text.endsWith('】');
+  const cleanText = isQuote ? text.slice(1, -1) : text;
+  
+  setActiveCard(currentSegmentIndex, currentParaIndex);
+  updateProgress();
+  
+  speakParagraph(cleanText, () => {
+    if (isPlaying && !isPaused) {
+      currentParaIndex++;
+      // Brief pause between paragraphs
+      setTimeout(() => playSequence(), 400);
+    }
+  });
+}
+
+// Controls
+function togglePlay() {
+  if (isPlaying && !isPaused) {
+    // Pause
+    synth.pause();
+    isPaused = true;
+    document.getElementById('playBtn').textContent = '▶';
+    document.getElementById('statusDot').className = 'status-dot paused';
+    document.getElementById('statusText').textContent = '已暂停';
+    document.querySelectorAll('.speech-card.is-speaking').forEach(c => c.classList.remove('is-speaking'));
+  } else if (isPaused) {
+    // Resume
+    synth.resume();
+    isPaused = false;
+    document.getElementById('playBtn').textContent = '⏸';
+    document.getElementById('statusDot').className = 'status-dot speaking';
+    document.getElementById('statusText').textContent = '正在播讲...';
+    const card = document.getElementById(`card-${currentSegmentIndex}-${currentParaIndex}`);
+    if (card) card.classList.add('is-speaking');
+  } else {
+    // Start fresh or continue
+    isPlaying = true;
+    isPaused = false;
+    document.getElementById('playBtn').textContent = '⏸';
+    document.getElementById('statusDot').className = 'status-dot speaking';
+    document.getElementById('statusText').textContent = '正在播讲...';
+    startTimer();
+    playSequence();
+  }
+}
+
+function stopPlay() {
+  synth.cancel();
+  isPlaying = false;
+  isPaused = false;
+  stopTimer();
+  document.getElementById('playBtn').textContent = '▶';
+  document.getElementById('statusDot').className = 'status-dot';
+  document.getElementById('statusText').textContent = '已停止';
+  document.querySelectorAll('.speech-card.is-speaking').forEach(c => c.classList.remove('is-speaking'));
+}
+
+function prevSegment() {
+  if (currentParaIndex > 0) {
+    currentParaIndex--;
+  } else if (currentSegmentIndex > 0) {
+    currentSegmentIndex--;
+    currentParaIndex = 0;
+  }
+  if (isPlaying) {
+    synth.cancel();
+    setTimeout(() => playSequence(), 200);
+  } else {
+    setActiveCard(currentSegmentIndex, currentParaIndex);
+    updateProgress();
+  }
+}
+
+function nextSegment() {
+  const seg = PODCAST_DATA[currentSegmentIndex];
+  if (currentParaIndex < seg.paragraphs.length - 1) {
+    currentParaIndex++;
+  } else if (currentSegmentIndex < PODCAST_DATA.length - 1) {
+    currentSegmentIndex++;
+    currentParaIndex = 0;
+  }
+  if (isPlaying) {
+    synth.cancel();
+    setTimeout(() => playSequence(), 200);
+  } else {
+    setActiveCard(currentSegmentIndex, currentParaIndex);
+    updateProgress();
+  }
+}
+
+function jumpToChapter(segIdx) {
+  currentSegmentIndex = segIdx;
+  currentParaIndex = 0;
+  if (!isPlaying) {
+    setActiveCard(segIdx, 0);
+    updateProgress();
+  } else {
+    synth.cancel();
+    setTimeout(() => playSequence(), 200);
+  }
+}
+
+function jumpToSegment(segIdx, paraIdx) {
+  currentSegmentIndex = segIdx;
+  currentParaIndex = paraIdx;
+  if (!isPlaying) {
+    setActiveCard(segIdx, paraIdx);
+    updateProgress();
+  } else {
+    synth.cancel();
+    setTimeout(() => playSequence(), 200);
+  }
+}
+
+function seekToProgress(event) {
+  const track = document.getElementById('progressTrack');
+  const rect = track.getBoundingClientRect();
+  const ratio = (event.clientX - rect.left) / rect.width;
+  const targetItem = Math.floor(ratio * totalItems);
+  
+  // Find the segment and paragraph for this item
+  let count = 0;
+  for (let si = 0; si < PODCAST_DATA.length; si++) {
+    for (let pi = 0; pi < PODCAST_DATA[si].paragraphs.length; pi++) {
+      if (count === targetItem) {
+        jumpToSegment(si, pi);
+        return;
+      }
+      count++;
+    }
+  }
+}
+
+function setSpeed(speed) {
+  playbackSpeed = speed;
+  document.querySelectorAll('.speed-btn').forEach(btn => {
+    btn.classList.toggle('active', parseFloat(btn.dataset.speed) === speed);
+  });
+  // Update synth if currently speaking
+  if (synth.speaking) {
+    synth.cancel();
+    setTimeout(() => playSequence(), 200);
+  }
+}
+
+function changeVoice() {
+  const voiceName = document.getElementById('voiceSelect').value;
+  selectedVoice = voices.find(v => v.name === voiceName) || null;
+  if (synth.speaking) {
+    synth.cancel();
+    setTimeout(() => playSequence(), 200);
+  }
+}
+
+// Check browser support
+function checkSupport() {
+  if (!('speechSynthesis' in window)) {
+    document.getElementById('warningBanner').style.display = 'block';
+    document.getElementById('playBtn').disabled = true;
+    document.getElementById('playBtn').style.opacity = '0.3';
+    return false;
+  }
+  return true;
+}
+
+// Init
+function init() {
+  const supported = checkSupport();
+  buildChapterNav();
+  buildTextCards();
+  setActiveCard(0, 0);
+  updateProgress();
+  
+  document.getElementById('estimatedTotal').textContent = 
+    `~${estimatedMinutes}:00`;
+  document.getElementById('totalDuration').textContent = 
+    `⏱ 约${estimatedMinutes}分钟`;
+  
+  // Hide loading
+  setTimeout(() => {
+    document.getElementById('loadingOverlay').classList.add('hidden');
+    setTimeout(() => {
+      document.getElementById('loadingOverlay').style.display = 'none';
+    }, 500);
+  }, 600);
+}
+
+// Prevent Chrome from stopping speech after ~15s
+// Chrome bug: long utterances get cut off. We use short paragraphs so this should be fine,
+// but add a keepalive just in case.
+if (synth) {
+  setInterval(() => {
+    if (synth.speaking && !synth.paused) {
+      synth.pause();
+      synth.resume();
+    }
+  }, 10000);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
